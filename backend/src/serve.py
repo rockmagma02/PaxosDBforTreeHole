@@ -1,40 +1,54 @@
-from database import DatabaseReadControl
 import logging
 import sys
 from urllib import parse
 import json
 import time
+from redis_op import redisInit, MessageQueue
+from database import dbInit, dbProcess
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
-while True:
-    try:
-        dbAccount = DatabaseReadControl(
-            'db', 'root', 'sry200253', 'TreeHole', 'Account')
-        break
-    except Exception as e:
-        logging.info(e)
-        time.sleep(1)
+redisConnect = redisInit(host='redis', port=6379)
+insQueue = MessageQueue(redisConnect, 'insQueue', 'producer')
+dbPool = dbInit(host='db', username='root',
+                password='sry200253', database='TreeHole')
+
 
 def application(env, start_response):
-    print(str(env))
-    logging.info('env is' + str(env))
-    start_response('200 OK', [('Content-Type','text/html')])
-    if env['QUERY_STRING'] != '':
-        data = str(processGet(env['QUERY_STRING']))
-        logging.info(data)
-        jj = json.dumps(data)
-        logging.info(jj)
-        return [bytes(jj, 'utf-8')]
-    else:
-        return [b"Hello World"]
+    if env['REQUEST_METHOD'] == 'GET':
+        if env['QUERY_STRING'] != '':
+            start_response('200 OK', [('Content-Type', 'text/json')])
+            res = str(processGet(env['QUERY_STRING']))
+            return [bytes(res, 'utf-8')]
+        else:
+            start_response('204 No Content', [('Content-Type', 'text/html')])
+            return [b"None"]
+    elif env['REQUEST_METHOD'] == 'POST':
+        res = processPost(env)
+        start_response('202 Accepted', [('Content-Type', 'text/json')])
+        insQueue.produce(res)
+        logging.info(res)
+        return [bytes(res, 'utf-8')]
+
 
 def processGet(queryString):
     query = parse.parse_qs(queryString)
-    logging.info(str(query))
     table = query['table'][0]
     index = query['index'][0]
     value = query['value'][0]
-    if table == 'Account':
-        data = dbAccount.searchByChar(index, value)
-        return data
+    ins = {'type': 'select', 'table': table, 'data': {index: value}}
+    data = dbProcess(dbPool, [ins])
+    return json.dumps(data)
+
+
+def processPost(env):
+    try:
+        requestBodySize = int(env.get('CONTENT_LENGTH', 0))
+    except:
+        requestBodySize = 0
+
+    requestBody = env['wsgi.input'].read(requestBodySize)
+    if requestBody != None:
+        return str(requestBody)[2:requestBodySize+2]
+    else:
+        return None
