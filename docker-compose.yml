@@ -7,6 +7,8 @@ services:
                         context: ./db
                         dockerfile: db.dockerfile
                 command: --default-authentication-plugin=mysql_native_password
+                ports:
+                        - 3306:3306
                 restart: always
                 environment:
                         MYSQL_ROOT_PASSWORD: sry200253
@@ -65,6 +67,10 @@ services:
                         inner-net:
                                 aliases:
                                         - backend
+                depends_on:
+                        - redis
+                        - db
+                        - nginx
 
         nodeinfo:
                 build:
@@ -75,6 +81,10 @@ services:
                         inner-net:
                                 aliases:
                                         - nodeinfo
+                depends_on:
+                        - redis
+                        - db
+                        - nginx
 
         paxos:
                 build:
@@ -85,6 +95,10 @@ services:
                         inner-net:
                                 aliases:
                                         - paxos
+                depends_on:
+                        - redis
+                        - db
+                        - nginx
 
 
 networks:
