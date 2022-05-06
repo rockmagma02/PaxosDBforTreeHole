@@ -1,2 +1,5 @@
 Faker==13.3.5
 PyMySQL==1.0.2
+python_redis_lock==3.7.0
+redis==4.2.2
+redis_lock==0.2.0
