@@ -1,3 +1,5 @@
+datatype==0.8.5
+DBUtils==3.0.2
 Faker==13.3.5
 PyMySQL==1.0.2
 python_redis_lock==3.7.0
