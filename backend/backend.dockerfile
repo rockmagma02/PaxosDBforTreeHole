@@ -4,6 +4,6 @@ WORKDIR /usr/src/app
 
 COPY ./src/* ./
 
-RUN pip install -r ./requirement.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip install -r ./requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 CMD [ "uwsgi", "--ini", "backend.ini" ]
