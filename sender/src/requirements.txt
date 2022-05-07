@@ -1,0 +1,4 @@
+python_redis_lock==3.7.0
+redis==4.2.2
+redis_lock==0.2.0
+requests==2.26.0

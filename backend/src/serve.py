@@ -48,7 +48,7 @@ def processPost(env):
         requestBodySize = 0
 
     requestBody = env['wsgi.input'].read(requestBodySize)
-    if requestBody != None:
+    if requestBody != '':
         return str(requestBody)[2:requestBodySize+2]
     else:
         return None

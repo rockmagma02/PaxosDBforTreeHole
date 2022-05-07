@@ -35,8 +35,7 @@ services:
                 volumes:
                         - "./redis/redis.conf:/usr/local/etc/redis/redis.conf"
                         - "./redis/data:/data"
-                command:
-                        redis-server /usr/local/etc/redis/redis.conf
+                command: redis-server /usr/local/etc/redis/redis.conf
                 restart: always
                 networks:
                         inner-net:
@@ -100,6 +99,19 @@ services:
                         - db
                         - nginx
 
+        sender:
+                build:
+                        context: ./sender
+                        dockerfile: sender.dockerfile
+                restart: always
+                networks:
+                        inner-net:
+                                aliases:
+                                        - sender
+                depends_on:
+                        - redis
+                        - db
+                        - nginx
 
 networks:
         inner-net:
