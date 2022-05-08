@@ -102,22 +102,3 @@ def dbProcess(pool, insList):
     cursor.close()
     con.close()
     return res
-
-from faker import Faker
-
-fake = Faker()
-
-pool = dbInit(host='db', username='root', password='sry200253', database='TreeHole')
-
-start = time.time()
-i = 0
-while i < 50:
-    try:
-        data = {'mail': fake.email(), 'passwordHash': fake.md5(), 'createDatetime': fake.date_time()}
-        ins = {'type': 'insert', 'table': 'Account', 'data': data}
-        dbProcess(pool, [ins])
-        i += 1
-    except Exception as e:
-        logging.info(e)
-        time.sleep(5)
-print(time.time() - start)

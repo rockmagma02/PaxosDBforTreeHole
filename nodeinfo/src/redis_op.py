@@ -141,3 +141,9 @@ class MutexVar:
         if self.__lock.locked():
             self.__lock.release()
         del self
+
+
+def generteMutex(pool, name):
+    r = redis.Redis(connection_pool=pool, decode_responses=True)
+    lock = redis_lock.Lock(r, name)
+    return lock
