@@ -1,8 +1,10 @@
 from dataType import NodeMessage, NodeMes2json, json2NodeMes
-from redis_op import MutexVar, MessageQueue
+from redis_op import MessageQueue
 from collections import Counter
 import json
 import time
+
+import logging
 
 import threading
 
@@ -25,21 +27,22 @@ class Proposer(threading.Thread):
         self.makePrepareRequest()
         while True:
             mes = self.mq.consume()
-            mes = json2NodeMes(mes)
-            if mes.type == 'prepareRespond':
-                if mes.promise == False:
-                    return False
-                elif mes.promise == True:
-                    senderId = self.addresses.index(mes.source)
-                    self.acceptValues[senderId] = res.value
-                    mostCommonValue = Counter(
-                        self.acceptValues).most_common(1)[0]
-                    if (mostCommonValue[0] != False) and (mostCommonValue[1] >= self.majority):
-                        if mostCommonValue[0] != None:
-                            self.value = mostCommonValue[0]
-                        self.makeAcceptRequest()
+            if mes is not None:
+                mes = json2NodeMes(mes)
+                if mes.type == 'prepareRespond':
+                    if mes.promise == False:
+                        return False
+                    elif mes.promise == True:
+                        senderId = self.addresses.index(mes.source)
+                        self.acceptValues[senderId] = mes.value
+                        mostCommonValue = Counter(
+                            self.acceptValues).most_common(1)[0]
+                        if (mostCommonValue[0] != False) and (mostCommonValue[1] >= self.majority):
+                            if mostCommonValue[0] != None:
+                                self.value = mostCommonValue[0]
+                            self.makeAcceptRequest()
 
-    def makePrepareResquest(self):
+    def makePrepareRequest(self):
         for target in self.addresses:
             mes = NodeMessage()
             mes.type = 'prepareRequest'
@@ -59,7 +62,7 @@ class Proposer(threading.Thread):
                 mes = NodeMessage()
                 mes.type = 'acceptRequest'
                 mes.source = self.host
-                mes.target = self.address[i]
+                mes.target = self.addresses[i]
                 mes.targetAgent = 'acceptor'
                 mes.turn = self.turn
                 mes.number = self.number

@@ -34,7 +34,6 @@ services:
                         - 6379:6379
                 volumes:
                         - "./redis/redis.conf:/usr/local/etc/redis/redis.conf"
-                        - "./redis/data:/data"
                 command: redis-server /usr/local/etc/redis/redis.conf
                 restart: always
                 networks:
@@ -56,6 +55,9 @@ services:
                         inner-net:
                                 aliases:
                                         - nginx
+                        out-net:
+                                aliases:
+                                        - paxos111
 
         backend:
                 build:
@@ -108,6 +110,7 @@ services:
                         inner-net:
                                 aliases:
                                         - sender
+                        out-net:
                 depends_on:
                         - redis
                         - db
@@ -115,3 +118,5 @@ services:
 
 networks:
         inner-net:
+        out-net:
+                external: true

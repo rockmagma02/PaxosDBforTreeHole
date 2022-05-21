@@ -59,7 +59,7 @@ def json2NodeMes(jsObj):
     out.targetAgent = obj['targetAgent']
     out.turn = obj['turn']
     out.number = obj['number']
-    out.value = obj['value'] if type(obj['value']) == str else json.dumps(obj['value'])
+    out.value = obj['value']
     out.promise = obj['promise']
     out.accept = obj['accept']
     return out

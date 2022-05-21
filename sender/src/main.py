@@ -17,4 +17,4 @@ if __name__ == '__main__':
         if message == None:
             time.sleep(0.001)
         else:
-            pool.apply_async(func=Sender, args=(message, ))
+            pool.apply_async(func=sender, args=(message, ))

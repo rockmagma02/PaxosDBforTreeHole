@@ -27,3 +27,8 @@ CREATE TABLE `instructionBackup` (
   `pointTable` char(128) NOT NULL,
   `pointID` bigint NOT NULL
 ) ENGINE='InnoDB';
+
+CREATE TABLE `PaxosTurns` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `status` char(128) NOT NULL
+) ENGINE='InnoDB';

@@ -18,8 +18,7 @@ def application(env, start_response):
         requestBodySize = 0
 
     requestBody = env['wsgi.input'].read(requestBodySize)
-    logging.info(requestBody)
-    NodeMessagejson = str(requestBody)[2:requestBodySize+2]
+    NodeMessagejson = requestBody.decode()
     if NodeMessagejson != '':
         Messages.produce(NodeMessagejson)
         logging.info('message sent successfully')

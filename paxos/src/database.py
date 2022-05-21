@@ -6,7 +6,7 @@ import logging
 import time
 import json
 
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+logging.basicConfig(stream=sys.stdout, level=logging.CRITICAL)
 
 
 def dbInit(host, username, password, database, port=3306, connectionNUm=5):

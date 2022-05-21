@@ -1,5 +1,6 @@
 import redis
 import redis_lock
+import logging
 
 
 def redisInit(host='redis', port=6379):
@@ -27,7 +28,7 @@ class MessageQueue:
 
     def __init__(self, connectionPool, name, mode):
         self.__redis = redis.Redis(
-            connection_pool=connectionPool, decode_responses=True)
+            connection_pool=connectionPool)
         self.__key = name
         self.__mode = mode
 
@@ -49,10 +50,24 @@ class MessageQueue:
             Returns:
                 str: 取出的消息队列中的内容, 注意, 如果队列为空, 则会阻塞2s后,取出None
             """
-            return self.__redis.brpop(self.__key, 2)
+            res = self.__redis.brpop(self.__key, 2)
+            if res is not None:
+                if type(res) is bytes:
+                    return res.decode()
+                elif type(res) is tuple:
+                    return res[1].decode()
+            else:
+                return res
 
         def consume_withoutBreaking():
-            return self.__redis.rpop(self.__key)
+            res = self.__redis.rpop(self.__key)
+            if res is not None:
+                if type(res) is bytes:
+                    return res.decode()
+                elif type(res) is tuple:
+                    return res[1].decode()
+            else:
+                return res
 
         if mode == 'producer':
             self.produce = produce

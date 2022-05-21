@@ -1,5 +1,5 @@
 from dataType import NodeMessage, NodeMes2json, json2NodeMes
-from redis_op import MutexVar, MessageQueue
+from redis_op import MessageQueue
 import json
 
 import threading
@@ -63,10 +63,10 @@ class Acceptor(threading.Thread):
         reply.turn = mes.turn
         if (self.promiseID is not None) and (mes.number >= self.promiseID):
             if self.isAccept == False:
-                self.FirstAccept == True
-            self.isAccept == True
-            self.acceptID == mes.number
-            self.acceptValue == mes.value
+                self.FirstAccept = True
+            self.isAccept = True
+            self.acceptID = mes.number
+            self.acceptValue = mes.value
             reply.number = self.acceptID
             reply.value = self.acceptValue
             reply.promise = None

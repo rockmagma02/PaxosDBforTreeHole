@@ -1,17 +1,12 @@
 import redis
+from paxos import paxos
 from redis_op import MessageQueue, generteMutex
+from database import dbInit, dbProcess, Ins2Sql
 from multiprocessing import Queue
+import logging
+from multiprocessing import Process
 from dataType import NodeMessage, NodeMes2json, json2NodeMes
 import json
-
-# 这是 mailroon 用来通知 paxos 管理员需要新建 paxos 简称的通知的结构体
-
-
-class paxosInform:
-    turn = None
-    AcceptorMQ = None
-    ProposerMQ = None
-    LearnerMQ = None
 
 
 # 单例设计模式
@@ -23,50 +18,76 @@ class MailRoom():
             cls.__obj = object.__new__(cls)
         return cls.__obj
 
-    def __init__(self, MailQueue: MessageQueue, turnBoard, inform: Queue, redisPool: redis.ConnectionPool):
+    def __init__(self, MailQueue: MessageQueue, turnBoard, redisPool: redis.ConnectionPool, dbPool, host, address):
         self.MailQueue = MailQueue
         self.turnBoardName = turnBoard
-        self.informQueue = inform
-        self.pool = redisPool
+        self.redispool = redisPool
+        self.dbPool = dbPool
+        self.host = host
+        self.address = address
 
-    def run():
+    def run(self):
+        insQueue = MessageQueue(self.redispool, 'insQueue', 'consumer')
+        senderQueue = MessageQueue(self.redispool, 'sender', 'producer')
         while True:
             mesJson = self.MailQueue.consume()
+            logging.critical(mesJson)
             if mesJson is not None:
                 mes = json2NodeMes(mesJson)
-                lock = generteMutex(self.pool, self.turnBoardName + 'Mutex')
+
+                # 获取正在进行的轮次
+                lock = generteMutex(
+                    self.redispool, self.turnBoardName + 'Mutex')
                 if lock.acquire():
-                    r = redis.Redis(connection_pool=self.pool,
+                    r = redis.Redis(connection_pool=self.redispool,
                                     decode_responses=True)
                     turns = json.loads(r.get(self.turnBoardName))
                 lock.release()
-                if mes.turn not in turns:
-                    lock = generteMutex(
-                        self.pool, self.turnBoardName + 'Mutex')
-                    if lock.acquire():
-                        r = redis.Redis(connection_pool=self.pool,
-                                        decode_responses=True)
-                        turns = json.loads(r.get(self.turnBoardName))
-                        turns.append(mes.turn)
-                        r.set(self.tuBoardName, json.dumps(turns))
-                    lock.release()
 
-                    inform = paxosInform()
-                    inform.turn = mes.turn
-                    inform.ProposerMQ = MessageQueue(
-                        self.pool, 'proposer_'+str(mes.turn), 'produce')
-                    inform.AcceptorMQ = MessageQueue(
-                        self.pool, 'acceptor_'+str(mes.turn), 'produce')
-                    inform.LearnerMQ = MessageQueue(
-                        self.pool, 'learner_'+str(mes.turn), 'produce')
-                    self.informQueue.put(inform)
+                # 如果消息的轮次是正在进行的轮次，则会分发消息
+                if mes.turn in turns:
+                    if mes.targetAgent == 'proposer':
+                        MessageQueue(self.redispool, 'proposer_' +
+                                     str(mes.turn), 'producer').produce(mesJson)
+                    elif mes.targetAgent == 'acceptor':
+                        MessageQueue(self.redispool, 'acceptor_' +
+                                     str(mes.turn), 'producer').produce(mesJson)
+                    elif mes.targetAgent == 'learner':
+                        MessageQueue(self.redispool, 'learner_' +
+                                     str(mes.turn), 'producer').produce(mesJson)
 
-                if mes.targetAgent == 'proposer':
-                    MessageQueue(self.pool, 'proposer_' +
-                                 str(mes.turn), 'produce').produce(mesJson)
-                elif mes.targetAgent == 'acceptor':
-                    MessageQueue(self.pool, 'acceptor_' +
-                                 str(mes.turn), 'produce').produce(mesJson)
-                elif mes.targetAgent == 'learner':
-                    MessageQueue(self.pool, 'learner_' +
-                                 str(mes.turn), 'produce').produce(mesJson)
+                else:
+                    # 如果消息的轮次不是正在进行的轮次，且该轮次没有done，则会建立新的轮次
+
+                    # 查看该轮次是否结束
+                    ins = {'type': 'select', 'table': 'PaxosTurns',
+                           'data': {'id': mes.turn}}
+                    res = dbProcess(self.dbPool, [ins])
+                    if len(res) == 0:  # 轮次没有done
+
+                        # 建立新轮次
+                        lock = generteMutex(
+                            self.redispool, self.turnBoardName + 'Mutex')
+                        if lock.acquire():
+                            r = redis.Redis(connection_pool=self.redispool,
+                                            decode_responses=True)
+                            turns = json.loads(r.get(self.turnBoardName))
+                            turns.append(mes.turn)
+                            r.set(self.turnBoardName, json.dumps(turns))
+                        lock.release()
+
+                        # 新的paxos
+                        proposal = insQueue.consume_withoutBreaking()
+                        paxosP = Process(target=paxos, args=(
+                            mes.turn, self.host, self.address, proposal, senderQueue, self.redispool))
+                        paxosP.start()
+
+                        if mes.targetAgent == 'proposer':
+                            MessageQueue(self.redispool, 'proposer_' +
+                                        str(mes.turn), 'producer').produce(mesJson)
+                        elif mes.targetAgent == 'acceptor':
+                            MessageQueue(self.redispool, 'acceptor_' +
+                                        str(mes.turn), 'producer').produce(mesJson)
+                        elif mes.targetAgent == 'learner':
+                            MessageQueue(self.redispool, 'learner_' +
+                                        str(mes.turn), 'producer').produce(mesJson)

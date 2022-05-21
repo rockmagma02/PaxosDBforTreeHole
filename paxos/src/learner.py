@@ -1,5 +1,5 @@
 from dataType import NodeMessage, NodeMes2json, json2NodeMes
-from redis_op import MutexVar, MessageQueue
+from redis_op import MessageQueue
 from collections import Counter
 import json
 
