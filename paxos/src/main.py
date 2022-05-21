@@ -9,6 +9,7 @@ import logging
 import sys
 import time
 from mail_room import MailRoom
+from executor import Executor
 
 logging.basicConfig(stream=sys.stdout, level=logging.CRITICAL)
 
@@ -35,6 +36,10 @@ if __name__ == '__main__':
     mailRoomProcess = Process(target=mailRoom.run)
     mailRoomProcess.start()
     logging.critical('mail room begin to work')
+    
+    executor = Executor(redisPool, dbPool, 0)
+    executorProcess = Process(target=executor.run)
+    executorProcess.start()
 
     while True:
         lock = generteMutex(redisPool, turnBoardMutex)

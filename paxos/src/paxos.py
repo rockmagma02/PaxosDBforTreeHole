@@ -2,18 +2,20 @@ from queue import Queue
 import threading
 import redis_lock
 import redis
-from redis_op import MessageQueue
+from redis_op import MessageQueue, generteMutex
 from dataType import NodeMessage, NodeMes2json, json2NodeMes
 from proposer import Proposer
 from acceptor import Acceptor
 from learner import Learner
+from database import dbProcess
 import sys
+import json
 
 import logging
 logging.basicConfig(stream=sys.stdout, level=logging.CRITICAL)
 
 
-def paxos(turn, host, addresses, proposal, sender: MessageQueue, redisPool):
+def paxos(turn, host, addresses, proposal, sender: MessageQueue, redisPool, dbPool, turnBoard):
     MQ_p = MessageQueue(redisPool, 'proposer_' + str(turn), 'consumer')
     MQ_a = MessageQueue(redisPool, 'acceptor_' + str(turn), 'consumer')
     MQ_l = MessageQueue(redisPool, 'learner_' + str(turn), 'consumer')
@@ -31,11 +33,23 @@ def paxos(turn, host, addresses, proposal, sender: MessageQueue, redisPool):
     learner.join()
     ins = learner.decide
 
+    turnBoardMutex = turnBoard + 'Mutex'
+    lock = generteMutex(redisPool, turnBoardMutex)
+    if lock.acquire():
+        r = redis.Redis(connection_pool=redisPool, decode_responses=True)
+        turns = json.loads(r.get(turnBoard))
+        turns.remove(turn)
+        r.set(turnBoard, json.dumps(turns))
+    lock.release()
 
-    # TODO 删掉turnBorad里的轮次
-    # TODO 执行指令
-    # TODO 标记执行过的轮次
-    # TODO fanhui proposal
+    execution = MessageQueue(redisPool, 'executor', 'producer')
+    execution.produce(json.dumps({'turn': turn, 'ins': ins}))
+    
+    dbProcess(dbPool, [{'type': 'insert', 'table': 'PaxosTurns', 'data': {'id': turn, 'status': 'done'}}])
+
+    insQueue = MessageQueue(redisPool, 'insQueue', 'consumer')
+    if proposal != ins:
+        insQueue.pushR(proposal)
 
     logging.critical('paxos done')
     logging.critical(ins)
