@@ -31,7 +31,6 @@ class MailRoom():
         senderQueue = MessageQueue(self.redispool, 'sender', 'producer')
         while True:
             mesJson = self.MailQueue.consume()
-            logging.critical(mesJson)
             if mesJson is not None:
                 mes = json2NodeMes(mesJson)
 
@@ -79,7 +78,7 @@ class MailRoom():
                         # 新的paxos
                         proposal = insQueue.consume_withoutBreaking()
                         paxosP = Process(target=paxos, args=(
-                            mes.turn, self.host, self.address, proposal, senderQueue, self.redispool))
+                            mes.turn, self.host, self.address, proposal, senderQueue, self.redispool, self.dbPool, self.turnBoardName))
                         paxosP.start()
 
                         if mes.targetAgent == 'proposer':

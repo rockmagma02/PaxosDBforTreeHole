@@ -29,7 +29,7 @@ class Executor:
                 self.execute(self.insQ[self.minNeedEx])
                 self.insQ.pop(self.minNeedEx)
                 self.nowTurn += 1
-                if not self.insQ:
+                if self.insQ:
                     self.minNeedEx = min(list(self.insQ.keys()))
                 else:
                     self.minNeedEx = float('inf')

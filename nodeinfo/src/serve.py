@@ -21,7 +21,6 @@ def application(env, start_response):
     NodeMessagejson = requestBody.decode()
     if NodeMessagejson != '':
         Messages.produce(NodeMessagejson)
-        logging.info('message sent successfully')
         start_response('202 Accepted', [('Content-Type', 'text/json')])
         return [bytes(NodeMessagejson, 'utf-8')]
     else:

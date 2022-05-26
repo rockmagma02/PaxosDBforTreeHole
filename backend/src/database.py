@@ -6,7 +6,7 @@ import logging
 import time
 import json
 
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+
 
 
 def dbInit(host, username, password, database, port=3306, connectionNUm=5):
@@ -32,8 +32,6 @@ def dbInit(host, username, password, database, port=3306, connectionNUm=5):
             return dbPool
             break
         except Exception as e:
-            print(e)
-            logging.info('db is not exists, try again')
             time.sleep(1)
 
 

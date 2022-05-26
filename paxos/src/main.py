@@ -14,7 +14,7 @@ from executor import Executor
 logging.basicConfig(stream=sys.stdout, level=logging.CRITICAL)
 
 # 一些 常量
-address = ['paxos111', 'paxos222']
+address = ['paxos111', 'paxos222', 'paxos333', 'paxos444', 'paxos555']
 host = 'paxos111'
 
 dbPool = dbInit('db', 'root', 'sry200253', 'TreeHole')
@@ -40,25 +40,29 @@ if __name__ == '__main__':
     executor = Executor(redisPool, dbPool, 0)
     executorProcess = Process(target=executor.run)
     executorProcess.start()
+    logging.critical('executor begin to work')
 
     while True:
         lock = generteMutex(redisPool, turnBoardMutex)
         if lock.acquire(blocking=True):
             r = redis.Redis(connection_pool=redisPool, decode_responses=True)
             turns = json.loads(r.get(turnBoard))
-        if len(turns) <= 10:
-            proposal = insQueue.consume_withoutBreaking()
-            if proposal is not None:
-                logging.critical('want to propose')
-                logging.critical(proposal)
-                if turns == []:
-                    turn = 1
-                else:
-                    turn = max(turns) + 1
-                turns.append(turn)
-                r.set(turnBoard, json.dumps(turns))
-                paxosP = Process(target=paxos, args=(turn, host, address, proposal, senderQueue, redisPool))
-                paxosP.start()
+            if len(turns) <= 10:
+                proposal = insQueue.consume_withoutBreaking()
+                if proposal is not None:
+                    tt = dbProcess(dbPool, [{'type': 'selectLast', 'table': 'PaxosTurns', 'data': {'id': None}}])
+                    if len(tt) == 0:
+                        turn = 1
+                    else:
+                        turn = tt[0][0] + 1
+                    if len(turns) != 0:
+                        turn = max(turn, max(turns)+1)
+                    if turn == 1:
+                        r.set('start_time', f'{time.time()}')
+                    turns.append(turn)
+                    r.set(turnBoard, json.dumps(turns))
+                    paxosP = Process(target=paxos, args=(turn, host, address, proposal, senderQueue, redisPool, dbPool, turnBoard))
+                    paxosP.start()
         lock.release()
         time.sleep(0.02)
             # 主动提案

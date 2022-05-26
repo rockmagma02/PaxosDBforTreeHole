@@ -10,6 +10,7 @@ from learner import Learner
 from database import dbProcess
 import sys
 import json
+import time
 
 import logging
 logging.basicConfig(stream=sys.stdout, level=logging.CRITICAL)
@@ -33,23 +34,26 @@ def paxos(turn, host, addresses, proposal, sender: MessageQueue, redisPool, dbPo
     learner.join()
     ins = learner.decide
 
+    insQueue = MessageQueue(redisPool, 'insQueue', 'consumer')
+    if (proposal is not None) and (proposal != ins):
+        insQueue.pushR(proposal)
+
+    execution = MessageQueue(redisPool, 'executor', 'producer')
+    execution.produce(json.dumps({'turn': turn, 'ins': ins}))
+
     turnBoardMutex = turnBoard + 'Mutex'
     lock = generteMutex(redisPool, turnBoardMutex)
     if lock.acquire():
+        tt = dbProcess(dbPool, [{'type': 'select', 'table': 'PaxosTurns', 'data': {'id': turn}}])
+        if len(tt) == 0:
+
+            dbProcess(dbPool, [{'type': 'insert', 'table': 'PaxosTurns', 'data': {'id': turn, 'status': 'done'}}])
+
+
+
         r = redis.Redis(connection_pool=redisPool, decode_responses=True)
         turns = json.loads(r.get(turnBoard))
         turns.remove(turn)
         r.set(turnBoard, json.dumps(turns))
+        r.set(f'{turn} done', f'{time.time()}')
     lock.release()
-
-    execution = MessageQueue(redisPool, 'executor', 'producer')
-    execution.produce(json.dumps({'turn': turn, 'ins': ins}))
-    
-    dbProcess(dbPool, [{'type': 'insert', 'table': 'PaxosTurns', 'data': {'id': turn, 'status': 'done'}}])
-
-    insQueue = MessageQueue(redisPool, 'insQueue', 'consumer')
-    if proposal != ins:
-        insQueue.pushR(proposal)
-
-    logging.critical('paxos done')
-    logging.critical(ins)

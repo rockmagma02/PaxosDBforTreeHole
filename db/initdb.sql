@@ -15,10 +15,9 @@ CREATE TABLE `Account` (
 ) ENGINE='InnoDB';
 
 CREATE TABLE `HoleContent` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `treeId` bigint unsigned NOT NULL,
+  `treeId` bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `content` text NOT NULL,
-  `auhor` char(128) NOT NULL,
+  `author` char(128) NOT NULL,
   `createTime` datetime NOT NULL
 ) ENGINE='InnoDB';
 
@@ -29,6 +28,6 @@ CREATE TABLE `instructionBackup` (
 ) ENGINE='InnoDB';
 
 CREATE TABLE `PaxosTurns` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `id` bigint unsigned NOT NULL PRIMARY KEY,
   `status` char(128) NOT NULL
 ) ENGINE='InnoDB';

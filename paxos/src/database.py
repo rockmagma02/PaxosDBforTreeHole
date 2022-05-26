@@ -6,10 +6,10 @@ import logging
 import time
 import json
 
-logging.basicConfig(stream=sys.stdout, level=logging.CRITICAL)
 
 
-def dbInit(host, username, password, database, port=3306, connectionNUm=5):
+
+def dbInit(host, username, password, database, port=3306, connectionNUm=20):
     """创建与数据库的连接池
 
     Args:
@@ -18,7 +18,7 @@ def dbInit(host, username, password, database, port=3306, connectionNUm=5):
         password (str): 访问数据库的密码
         database (str): 需要连接的数据库名
         port (int, optional): 数据库的端口. Defaults to 3306.
-        connectionNUm (int, optional): 连接池中最少的连接数量. Defaults to 5.
+        connectionNUm (int, optional): 连接池中最少的连接数量. Defaults to 20.
 
     Returns:
         pool: 创建好的连接池
@@ -32,8 +32,6 @@ def dbInit(host, username, password, database, port=3306, connectionNUm=5):
             return dbPool
             break
         except Exception as e:
-            print(e)
-            logging.info('db is not exists, try again')
             time.sleep(1)
 
 
@@ -83,6 +81,12 @@ class Ins2Sql:
         else:
             raise TypeError('ins is wrong')
         return sql
+    
+    def selectLast(ins):
+        data = ins['data']
+        index = list(data.keys())[0]
+        sql = f"SELECT * FROM `{ins['table']}` ORDER BY `{index}` DESC LIMIT 1"
+        return sql
 
 
 def dbProcess(pool, insList):
@@ -94,10 +98,18 @@ def dbProcess(pool, insList):
             sql += Ins2Sql.update(ins)
         elif ins['type'] == 'select':
             sql += Ins2Sql.select(ins)
-    con = pool.connection()
-    cursor = con.cursor()
-    cursor.execute(sql)
-    con.commit()
+        elif ins['type'] == 'selectLast':
+            sql += Ins2Sql.selectLast(ins)
+    while True:
+        try:
+            con = pool.connection()
+            cursor = con.cursor()
+            cursor.execute(sql)
+            con.commit()
+            break
+        except Exception as e:
+            con.ping(True)
+            time.sleep(0.01)
     res = cursor.fetchall()
     cursor.close()
     con.close()
