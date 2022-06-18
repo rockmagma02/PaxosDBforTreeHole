@@ -1,6 +1,6 @@
 # PaxosDBforTreeHole
 
-![GitHub](https://img.shields.io/github/license/rockmagma02/PaxosDBforTreeHole)![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/rockmagma02/PaxosDBforTreeHole)![GitHub release (latest by date)](https://img.shields.io/github/downloads/rockmagma02/PaxosDBforTreeHole/latest/total)
+![GitHub](https://img.shields.io/github/license/rockmagma02/PaxosDBforTreeHole) ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/rockmagma02/PaxosDBforTreeHole) ![GitHub release (latest by date)](https://img.shields.io/github/downloads/rockmagma02/PaxosDBforTreeHole/latest/total)
 
 ## Introduce
 
@@ -10,7 +10,7 @@ Paxos 算法得名于其原始论文中作者 Leslie Lamport 借以比喻算法�
 
 本项目以 Leslie Lamport 于 2001 年撰写的简化叙述为基础, 结合关于 Paxos 算法核心内容的简单工程实践, 对 Paxos 算法的运行过程以及处理网络延迟、错序及丢失的方式进行阐述, 并对 Paxos 算法所不能较好处理的问题进行了进一步的讨论.
 
-> 完整的介绍可以查看 [PDF版本的报告]()，以下部分重点介绍如何使用我们的代码
+> 完整的介绍可以查看 [PDF版本的报告](https://github.com/rockmagma02/PaxosDBforTreeHole/blob/main/%E9%A1%B9%E7%9B%AE%E6%8A%A5%E5%91%8A.pdf)，以下部分重点介绍如何使用我们的代码
 
 ## Install
 
